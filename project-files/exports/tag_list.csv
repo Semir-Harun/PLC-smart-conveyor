@@ -1,0 +1,5 @@
+Tag,Type,Address,Description
+DI_ESTOP_OK,BOOL,%I0.0,E-stop loop healthy
+DI_PE_INFEED,BOOL,%I0.5,Infeed item detection
+DO_CONV_RUN,BOOL,%Q0.0,Conveyor run command
+AO_SPEED_REF_RAW,INT,%QW64,VFD speed reference raw

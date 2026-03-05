@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> S0_STOPPED
+    S0_STOPPED --> S1_READY: Permissives TRUE
+    S1_READY --> S2_AUTO_RUN: StartCmd & AutoMode
+    S2_AUTO_RUN --> S3_SORT_ACTUATE: NeedDivert
+    S3_SORT_ACTUATE --> S2_AUTO_RUN: PulseDone
+    S1_READY --> S5_MANUAL: ManualMode
+    S5_MANUAL --> S1_READY: ManualExit & Permissives
+
+    S0_STOPPED --> S4_FAULT: FaultDetected
+    S1_READY --> S4_FAULT: FaultDetected
+    S2_AUTO_RUN --> S4_FAULT: FaultDetected
+    S3_SORT_ACTUATE --> S4_FAULT: FaultDetected
+    S5_MANUAL --> S4_FAULT: FaultDetected
+
+    S4_FAULT --> S1_READY: ResetCmd & FaultCleared

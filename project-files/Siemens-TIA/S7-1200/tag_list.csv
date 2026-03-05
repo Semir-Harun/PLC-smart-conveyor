@@ -1,0 +1,5 @@
+Tag,Type,Address,Comment
+DI_EStopOk,BOOL,%I0.0,Safety chain healthy
+DI_PE_Infeed,BOOL,%I0.5,Infeed photoeye
+DO_MotorRunCmd,BOOL,%Q0.0,Conveyor motor command
+AO_VFD_SpeedRef,INT,%QW64,VFD speed reference raw

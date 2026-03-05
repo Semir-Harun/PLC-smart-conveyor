@@ -1,0 +1,10 @@
+(* Placeholder Structured Text snippet *)
+PROGRAM PLC_PRG
+VAR
+    CMD_StartAuto : BOOL;
+    STS_AutoRunning : BOOL;
+END_VAR
+
+IF CMD_StartAuto THEN
+    STS_AutoRunning := TRUE;
+END_IF;

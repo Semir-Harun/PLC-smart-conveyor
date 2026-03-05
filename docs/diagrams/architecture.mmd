@@ -1,0 +1,13 @@
+flowchart LR
+    A[Infeed Photoeye] --> PLC[PLC Controller]
+    B[Load Cell] --> PLC
+    C[Barcode Scanner] --> PLC
+    D[Color Sensor/Vision] --> PLC
+
+    PLC --> E[VFD / Motor Drive]
+    PLC --> F[Diverter A Solenoid]
+    PLC --> G[Diverter B Solenoid]
+    PLC --> H[Reject Solenoid]
+    PLC --> I[HMI Panel]
+    I --> PLC
+    PLC --> J[Stacklight/Buzzer]

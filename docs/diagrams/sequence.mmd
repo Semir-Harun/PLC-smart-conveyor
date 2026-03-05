@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant OP as Operator
+    participant HMI as HMI
+    participant PLC as PLC
+    participant SEN as Sensors
+    participant ACT as Diverter
+
+    OP->>HMI: Press Start
+    HMI->>PLC: CMD_StartAuto
+    PLC->>PLC: Check permissives
+    PLC->>SEN: Read infeed + class input
+    SEN-->>PLC: Item detected + class/weight
+    PLC->>PLC: Track item to sort position
+    PLC->>ACT: Actuate diverter pulse
+    ACT-->>PLC: Actuation complete
+    PLC->>HMI: Update counters/status
+    PLC->>HMI: Raise alarms if fault

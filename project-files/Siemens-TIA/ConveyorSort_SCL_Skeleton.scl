@@ -1,0 +1,112 @@
+// FB_ProductTrackingFIFO (SCL / Structured Text)
+// Inputs: InfeedPulse (rising edge), SensorData (color/weight/barcode), Running
+// Outputs: none (writes into DB_FIFO)
+
+IF InfeedPulse AND Running THEN
+    // Create new record
+    DB_FIFO.Buf[DB_FIFO.Tail].Id := DB_FIFO.NextId;
+    DB_FIFO.NextId := DB_FIFO.NextId + 1;
+
+    DB_FIFO.Buf[DB_FIFO.Tail].Detected := TRUE;
+    DB_FIFO.Buf[DB_FIFO.Tail].ColorId := Sensor_ColorId;
+    DB_FIFO.Buf[DB_FIFO.Tail].WeightKg := Sensor_WeightKg;
+    DB_FIFO.Buf[DB_FIFO.Tail].BarcodeOk := Sensor_BarcodeOk;
+    DB_FIFO.Buf[DB_FIFO.Tail].BarcodeHash := Sensor_BarcodeHash;
+
+    // Decision
+    DB_FIFO.Buf[DB_FIFO.Tail].Decision := FC_ComputeDecision(
+        ColorId := Sensor_ColorId,
+        WeightKg := Sensor_WeightKg,
+        BarcodeOk := Sensor_BarcodeOk,
+        BarcodeHash := Sensor_BarcodeHash
+    );
+
+    // Advance Tail if buffer not full
+    IF DB_FIFO.Count < 50 THEN
+        DB_FIFO.Tail := (DB_FIFO.Tail + 1) MOD 50;
+        DB_FIFO.Count := DB_FIFO.Count + 1;
+    ELSE
+        // Buffer overflow => set alarm bit (handled elsewhere)
+        DB_Alarms.Alm_FIFO_Overflow := TRUE;
+    END_IF;
+END_IF;
+
+
+FUNCTION FC_ComputeDecision : INT
+VAR_INPUT
+    ColorId : INT;
+    WeightKg : REAL;
+    BarcodeOk : BOOL;
+    BarcodeHash : DINT;
+END_VAR
+VAR
+    i : INT;
+END_VAR
+
+// Default reject if nothing matches
+FC_ComputeDecision := 3; // Reject
+
+// 1) Barcode
+IF DB_Params.Enable_Barcode AND BarcodeOk THEN
+    FOR i := 0 TO 19 DO
+        IF DB_Params.BarcodeHashList[i] = BarcodeHash THEN
+            FC_ComputeDecision := DB_Params.BarcodeLaneList[i]; // 1=A,2=B,3=Reject
+            RETURN;
+        END_IF;
+    END_FOR;
+END_IF;
+
+// 2) Color
+IF DB_Params.Enable_Color THEN
+    IF (ColorId >= 0) AND (ColorId <= 10) THEN
+        IF DB_Params.ColorToLane[ColorId] <> 0 THEN
+            FC_ComputeDecision := DB_Params.ColorToLane[ColorId];
+            RETURN;
+        END_IF;
+    END_IF;
+END_IF;
+
+// 3) Weight thresholds
+IF DB_Params.Enable_Weight THEN
+    IF WeightKg <= DB_Params.Weight_A_Max THEN
+        FC_ComputeDecision := 1; // Lane A
+        RETURN;
+    ELSIF WeightKg <= DB_Params.Weight_B_Max THEN
+        FC_ComputeDecision := 2; // Lane B
+        RETURN;
+    ELSE
+        FC_ComputeDecision := 3; // Reject
+        RETURN;
+    END_IF;
+END_IF;
+
+
+// FB_DiverterActuation
+// Trigger when product reaches divert sensor. Pop oldest decision.
+
+IF DivertPositionPulse AND (DB_FIFO.Count > 0) AND Running THEN
+    CASE DB_FIFO.Buf[DB_FIFO.Head].Decision OF
+        1:  // Lane A
+            Pulse_DivA := TRUE;   // feed into TP timer
+        2:  // Lane B
+            Pulse_DivB := TRUE;
+        3:  // Reject
+            Pulse_Reject := TRUE;
+    ELSE
+        Pulse_Reject := TRUE;
+    END_CASE;
+
+    // Pop
+    DB_FIFO.Head := (DB_FIFO.Head + 1) MOD 50;
+    DB_FIFO.Count := DB_FIFO.Count - 1;
+END_IF;
+
+// Use TP timers to energize solenoids for configurable time
+TP_DivA(IN := Pulse_DivA, PT := DB_Params.DiverterPulseTime);
+DO_DivA_Sol := TP_DivA.Q;
+
+TP_DivB(IN := Pulse_DivB, PT := DB_Params.DiverterPulseTime);
+DO_DivB_Sol := TP_DivB.Q;
+
+TP_Reject(IN := Pulse_Reject, PT := DB_Params.RejectPulseTime);
+DO_Reject_Sol := TP_Reject.Q;

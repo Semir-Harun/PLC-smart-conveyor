@@ -1,0 +1,10 @@
+Placeholder for Siemens TIA Portal PLC project archive.
+Replace this file with the real `.apXX` project file.
+
+Recommended naming:
+- PLC_Project_TIA_v1_0_FAT.ap17
+- PLC_Project_TIA_v1_1_SAT.ap17
+
+Companion Siemens package in this folder:
+- `TIA_Industrial_Template.md` (naming, OB/FB/DB architecture, UDT/FIFO design, alarms, HMI set)
+- `ConveyorSort_SCL_Skeleton.scl` (ready-to-paste SCL logic skeleton)
